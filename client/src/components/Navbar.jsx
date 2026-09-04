@@ -14,7 +14,7 @@ export default function Navbar() {
 
   return (
     <nav className="navbar">
-      <span className="brand">Cart<span>Mates</span></span>
+      <Link to="/" className="brand" style={{ textDecoration: "none" }}>Cart<span>Mates</span></Link>
       <Link to="/products">Products</Link>
       {user && <Link to="/cart">My Bag</Link>}
       {user && <Link to="/shared-cart">Shared Cart</Link>}

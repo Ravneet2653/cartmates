@@ -7,6 +7,7 @@ import Login from "./pages/Login.jsx";
 import Signup from "./pages/Signup.jsx";
 import Products from "./pages/Products.jsx";
 import ProductDetails from "./pages/ProductDetails.jsx";
+import Home from "./pages/Home.jsx";
 import Cart from "./pages/Cart.jsx";
 import SharedCartHome from "./pages/SharedCartHome.jsx";
 import SharedCartRoom from "./pages/SharedCartRoom.jsx";
@@ -47,7 +48,7 @@ export default function App() {
                 </ProtectedRoute>
               }
             />
-            <Route path="/" element={<Products />} />
+            <Route path="/" element={<Home />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </div>

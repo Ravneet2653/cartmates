@@ -1,43 +1,49 @@
 /* ============================================
-   CartMates — e-commerce marketplace design
-   White surfaces, bold pink accent, grid product
-   cards. Inspired by fashion-marketplace apps.
+   CartMates — glam shopaholic-chic redesign
+   Glossy pink/gold, playful script accents,
+   pill buttons, soft glowing shadows.
    ============================================ */
 :root {
-  --bg: #f5f5f6;
+  --bg: #fff5fa;
+  --bg-gradient: linear-gradient(160deg, #fff0f7 0%, #fdf7ff 45%, #fffaf2 100%);
   --surface: #ffffff;
-  --text: #282c3f;
-  --text-muted: #7e818c;
-  --border: #e9e9eb;
-  --accent: #ff3366;
-  --accent-hover: #e02358;
-  --accent-soft: #ffe7ec;
+  --text: #2b1330;
+  --text-muted: #8c7a92;
+  --border: #f4d9ea;
+  --accent: #ff2d8a;
+  --accent-hover: #e01c74;
+  --accent-soft: #ffe0f0;
+  --gold: #e8b64c;
+  --gold-soft: #fdf2dc;
   --buy: #14958f;
   --buy-soft: #e0f5f3;
-  --skip: #ff3366;
-  --skip-soft: #ffe7ec;
-  --maybe: #ff9f1a;
-  --maybe-soft: #fff2df;
+  --skip: #ff2d8a;
+  --skip-soft: #ffe0f0;
+  --maybe: #e8b64c;
+  --maybe-soft: #fdf2dc;
 
+  --font-script: "Pacifico", cursive;
   --font-display: "Poppins", system-ui, sans-serif;
   --font-body: "Inter", system-ui, sans-serif;
-  --radius: 4px;
+  --radius: 999px; /* pill-shaped by default — buttons, badges */
+  --radius-card: 16px;
 }
 
 * { box-sizing: border-box; }
 
 body {
   margin: 0;
-  background: var(--bg);
+  background: var(--bg-gradient);
+  background-attachment: fixed;
   color: var(--text);
   font-family: var(--font-body);
   font-size: 14px;
   line-height: 1.5;
-  color-scheme: light; /* tells the browser this is intentionally a light UI, not something to auto-invert */
+  color-scheme: light;
 }
 
 h1, h2, h3 { font-family: var(--font-display); margin: 0 0 6px; color: var(--text); }
-h2 { font-size: 1.3rem; font-weight: 700; }
+h2 { font-size: 1.35rem; font-weight: 700; }
 h3 {
   font-size: 0.72rem;
   font-weight: 600;
@@ -57,19 +63,20 @@ a { color: var(--text); text-decoration: none; }
   align-items: center;
   gap: 28px;
   padding: 16px 28px;
-  background: var(--surface);
+  background: rgba(255,255,255,0.85);
+  backdrop-filter: blur(8px);
   border-bottom: 1px solid var(--border);
   position: sticky;
   top: 0;
   z-index: 10;
 }
 .navbar .brand {
-  font-family: var(--font-display);
-  font-weight: 800;
-  font-size: 1.3rem;
-  letter-spacing: -0.01em;
+  font-family: var(--font-script);
+  font-weight: 400;
+  font-size: 1.6rem;
+  color: var(--accent);
 }
-.navbar .brand span { color: var(--accent); }
+.navbar .brand span { color: var(--gold); }
 .navbar a {
   font-size: 0.78rem;
   font-weight: 600;
@@ -81,78 +88,83 @@ a { color: var(--text); text-decoration: none; }
 .navbar .spacer { margin-left: auto; display: flex; align-items: center; gap: 16px; }
 .navbar .user-chip { display: flex; align-items: center; gap: 8px; font-size: 0.85rem; color: var(--text-muted); text-transform: none; letter-spacing: 0; }
 
-/* --- Buttons --- */
+/* --- Buttons: glossy pill --- */
 .btn {
   font-family: var(--font-body);
   font-weight: 700;
   font-size: 0.78rem;
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  padding: 10px 18px;
+  padding: 11px 22px;
   border-radius: var(--radius);
   border: 1.5px solid var(--accent);
   background: var(--surface);
   color: var(--accent);
   cursor: pointer;
-  transition: background 0.15s ease, color 0.15s ease;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
 }
-.btn:hover { background: var(--accent); color: white; }
-.btn:disabled { opacity: 0.5; cursor: default; background: var(--surface); color: var(--accent); }
-.btn-primary { background: var(--accent); color: white; }
-.btn-primary:hover { background: var(--accent-hover); }
-.btn-small { padding: 6px 12px; font-size: 0.7rem; }
-.btn-ghost { border-color: var(--border); color: var(--text-muted); }
-.btn-ghost:hover { background: var(--text); border-color: var(--text); color: white; }
+.btn:hover { transform: translateY(-1px); box-shadow: 0 6px 16px rgba(255,45,138,0.25); }
+.btn:disabled { opacity: 0.5; cursor: default; transform: none; box-shadow: none; }
+.btn-primary {
+  background: linear-gradient(135deg, var(--accent), #ff6fb0);
+  border: none;
+  color: white;
+  box-shadow: 0 4px 14px rgba(255,45,138,0.35);
+}
+.btn-primary:hover { box-shadow: 0 8px 22px rgba(255,45,138,0.45); }
+.btn-small { padding: 7px 14px; font-size: 0.7rem; }
+.btn-ghost { border-color: var(--border); color: var(--text-muted); background: var(--surface); }
+.btn-ghost:hover { border-color: var(--accent); color: var(--accent); box-shadow: 0 4px 12px rgba(255,45,138,0.15); }
 
 /* --- Forms --- */
 .field {
   display: block;
   width: 100%;
-  padding: 11px 14px;
+  padding: 11px 16px;
   margin-bottom: 12px;
   border: 1.5px solid var(--border);
-  border-radius: var(--radius);
+  border-radius: 14px;
   font-family: var(--font-body);
   font-size: 0.9rem;
   background: var(--surface);
-  color: var(--text); /* explicit, so browser dark-mode extensions or forced-colors can't make typed text invisible */
+  color: var(--text);
 }
 .field::placeholder { color: var(--text-muted); }
-.field:focus { outline: none; border-color: var(--accent); }
+.field:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
 .form-card {
   max-width: 380px;
   background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  padding: 32px;
+  border-radius: 24px;
+  padding: 36px 32px;
+  box-shadow: 0 20px 50px rgba(255,45,138,0.15);
 }
 .error-text { color: var(--skip); font-size: 0.85rem; margin: 4px 0 12px; }
 
-/* --- Product grid --- */
+/* --- Product grid: glossy cards --- */
 .product-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
-  gap: 20px;
+  gap: 22px;
 }
 .product-card {
   background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 6px;
+  border-radius: var(--radius-card);
   overflow: hidden;
-  transition: box-shadow 0.15s ease, transform 0.15s ease;
+  box-shadow: 0 8px 24px rgba(255,45,138,0.08);
+  transition: box-shadow 0.2s ease, transform 0.2s ease;
 }
-.product-card:hover { box-shadow: 0 8px 20px rgba(40,44,63,0.1); transform: translateY(-2px); }
+.product-card:hover { box-shadow: 0 16px 36px rgba(255,45,138,0.22); transform: translateY(-3px); }
 .product-card .image-area {
   aspect-ratio: 1;
-  background: linear-gradient(135deg, var(--accent-soft), #fff);
+  background: linear-gradient(135deg, var(--accent-soft), var(--gold-soft));
   display: flex; align-items: center; justify-content: center;
   overflow: hidden;
 }
 .product-card .image-area svg { width: 42px; height: 42px; stroke: var(--accent); }
 .product-card .image-area img { width: 100%; height: 100%; object-fit: cover; display: block; }
-.product-card .info { padding: 12px 14px 16px; }
+.product-card .info { padding: 14px 16px 18px; }
 .product-card .name { font-weight: 600; font-size: 0.88rem; margin-bottom: 4px; }
-.product-card .price { font-weight: 700; font-size: 0.95rem; margin-bottom: 10px; }
+.product-card .price { font-weight: 700; font-size: 0.95rem; margin-bottom: 10px; color: var(--accent); }
 .product-card .btn { width: 100%; }
 
 /* --- Room code badge --- */
@@ -162,10 +174,11 @@ a { color: var(--text); text-decoration: none; }
   font-weight: 700;
   font-size: 1.2rem;
   letter-spacing: 0.08em;
-  background: var(--text);
+  background: linear-gradient(135deg, var(--accent), var(--gold));
   color: white;
-  padding: 8px 16px;
+  padding: 10px 20px;
   border-radius: var(--radius);
+  box-shadow: 0 6px 18px rgba(255,45,138,0.3);
 }
 
 /* --- Decision pills --- */
@@ -175,14 +188,14 @@ a { color: var(--text); text-decoration: none; }
   gap: 6px;
   font-weight: 700;
   font-size: 0.72rem;
-  padding: 4px 10px;
-  border-radius: 999px;
+  padding: 5px 12px;
+  border-radius: var(--radius);
   text-transform: uppercase;
   letter-spacing: 0.05em;
 }
 .decision-buy { background: var(--buy-soft); color: var(--buy); }
 .decision-skip { background: var(--skip-soft); color: var(--skip); }
-.decision-maybe { background: var(--maybe-soft); color: var(--maybe); }
+.decision-maybe { background: var(--maybe-soft); color: #b8862f; }
 .decision-reason { font-size: 0.85rem; color: var(--text-muted); margin-top: 6px; }
 
 /* --- Avatars --- */
@@ -190,21 +203,21 @@ a { color: var(--text); text-decoration: none; }
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 26px; height: 26px;
+  width: 28px; height: 28px;
   border-radius: 50%;
-  background: var(--accent-soft);
+  background: linear-gradient(135deg, var(--accent-soft), var(--gold-soft));
   color: var(--accent);
   font-size: 0.7rem;
   font-weight: 700;
   flex-shrink: 0;
 }
 
-/* --- Cart / order-summary style list (used on bag & shared cart items) --- */
+/* --- Cart / order-summary style list --- */
 .summary-card {
   background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  padding: 4px 20px;
+  border-radius: var(--radius-card);
+  padding: 4px 22px;
+  box-shadow: 0 8px 24px rgba(255,45,138,0.08);
 }
 .summary-row {
   display: flex;
@@ -216,9 +229,9 @@ a { color: var(--text); text-decoration: none; }
 }
 .summary-row:last-child { border-bottom: none; }
 .summary-row .thumb, .thumb {
-  width: 48px; height: 48px;
-  border-radius: 4px;
-  background: var(--accent-soft);
+  width: 50px; height: 50px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, var(--accent-soft), var(--gold-soft));
   display: flex; align-items: center; justify-content: center;
   flex-shrink: 0;
   overflow: hidden;
@@ -226,26 +239,26 @@ a { color: var(--text); text-decoration: none; }
 .summary-row .thumb svg, .thumb svg { width: 22px; height: 22px; stroke: var(--accent); }
 .summary-row .thumb img, .thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
 .item-name { font-weight: 600; font-size: 0.9rem; }
-.item-price { font-weight: 700; color: var(--text); }
+.item-price { font-weight: 700; color: var(--accent); }
 
 /* --- Chat --- */
 .chat-window {
   height: 340px;
   overflow-y: auto;
   background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  padding: 16px;
+  border-radius: var(--radius-card);
+  padding: 18px;
+  box-shadow: 0 8px 24px rgba(255,45,138,0.08);
 }
 .chat-message { display: flex; gap: 8px; align-items: flex-start; margin-bottom: 12px; }
-.chat-message .bubble { background: var(--bg); border-radius: 10px; padding: 7px 12px; font-size: 0.87rem; }
+.chat-message .bubble { background: var(--accent-soft); border-radius: 14px 14px 14px 4px; padding: 8px 14px; font-size: 0.87rem; }
 .chat-message .sender-name { font-weight: 700; color: var(--accent); margin-right: 4px; }
 .chat-input-row { display: flex; gap: 8px; margin-top: 12px; }
 .chat-input-row .field { margin-bottom: 0; }
 
 /* --- Reactions --- */
 .reaction-row { display: flex; align-items: center; gap: 4px; margin: 10px 0; }
-.reaction-row button { background: none; border: none; font-size: 1.1rem; cursor: pointer; padding: 3px 5px; border-radius: 6px; }
+.reaction-row button { background: none; border: none; font-size: 1.15rem; cursor: pointer; padding: 3px 6px; border-radius: var(--radius); }
 .reaction-row button:hover { background: var(--accent-soft); }
 .reaction-display { font-size: 0.95rem; margin-left: 4px; }
 
@@ -256,14 +269,17 @@ a { color: var(--text); text-decoration: none; }
 .member-list { display: flex; gap: 6px; flex-wrap: wrap; }
 .member-chip {
   display: flex; align-items: center; gap: 6px;
-  background: var(--surface); border: 1px solid var(--border);
-  border-radius: 999px; padding: 4px 10px 4px 4px; font-size: 0.8rem;
+  background: var(--surface);
+  border-radius: var(--radius);
+  padding: 4px 12px 4px 4px;
+  font-size: 0.8rem;
+  box-shadow: 0 2px 8px rgba(255,45,138,0.1);
 }
 
 .empty-state { color: var(--text-muted); padding: 20px 0; font-size: 0.9rem; }
 
 .quantity-input {
   width: 46px; padding: 5px 6px;
-  border: 1px solid var(--border); border-radius: 4px;
+  border: 1px solid var(--border); border-radius: 10px;
   text-align: center; font-family: var(--font-body); font-weight: 600;
 }
