@@ -4,6 +4,11 @@ import User from "../models/User.js";
 import asyncHandler from "../middleware/asyncHandler.js";
 
 export const signup = asyncHandler(async (req, res) => {
+  // Deliberately destructure only name/email/password — even if req.body
+  // contains a "role" field, it's never read here. Role is never
+  // self-service; it's only ever set by an admin script (see
+  // scripts/makeAdmin.js). Letting a client set their own role at signup
+  // would be a privilege-escalation vulnerability.
   const { name, email, password } = req.body;
 
   const existing = await User.findOne({ email });
@@ -16,7 +21,7 @@ export const signup = asyncHandler(async (req, res) => {
 
   res.status(201).json({
     token,
-    user: { id: user._id, name: user.name, email: user.email },
+    user: { id: user._id, name: user.name, email: user.email, role: user.role },
   });
 });
 
@@ -33,15 +38,12 @@ export const login = asyncHandler(async (req, res) => {
 
   res.json({
     token,
-    user: { id: user._id, name: user.name, email: user.email },
+    user: { id: user._id, name: user.name, email: user.email, role: user.role },
   });
 });
 
 export const getMe = asyncHandler(async (req, res) => {
   const user = await User.findById(req.user.id).select("-password");
   if (!user) return res.status(404).json({ message: "User not found" });
-  // Same shape as login/signup ({ id, name, email }) — not the raw Mongoose
-  // document (which uses _id). AuthContext calls this on every page refresh,
-  // so a shape mismatch here meant user.id became undefined after any reload.
-  res.json({ id: user._id, name: user.name, email: user.email });
+  res.json({ id: user._id, name: user.name, email: user.email, role: user.role });
 });

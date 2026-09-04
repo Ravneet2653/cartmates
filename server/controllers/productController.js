@@ -2,7 +2,18 @@ import Product from "../models/Product.js";
 import asyncHandler from "../middleware/asyncHandler.js";
 
 export const getProducts = asyncHandler(async (req, res) => {
-  const products = await Product.find();
+  const { search, category } = req.query;
+
+  const filter = {};
+  if (search) {
+    // Case-insensitive partial match on name — e.g. ?search=shirt matches "Classic White T-Shirt"
+    filter.name = { $regex: search, $options: "i" };
+  }
+  if (category) {
+    filter.category = category;
+  }
+
+  const products = await Product.find(filter);
   res.json({ products });
 });
 

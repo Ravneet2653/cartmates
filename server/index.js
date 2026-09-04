@@ -16,9 +16,20 @@ import sharedCartRoutes from "./routes/sharedCartRoutes.js";
 import aiRoutes from "./routes/aiRoutes.js";
 import Message from "./models/Message.js";
 import Reaction from "./models/Reaction.js";
+import Vote from "./models/Vote.js";
+import User from "./models/User.js";
 import { notFound, errorHandler } from "./middleware/errorHandler.js";
 
 dotenv.config();
+
+const requiredEnvVars = ["MONGO_URI", "JWT_SECRET", "GEMINI_API_KEY", "PORT"];
+const missing = requiredEnvVars.filter((key) => !process.env[key]);
+if (missing.length > 0) {
+  console.error(`Missing required environment variables: ${missing.join(", ")}`);
+  console.error("Check your .env file — see .env.example for the expected keys.");
+  process.exit(1);
+}
+
 connectDB();
 
 const app = express();
@@ -52,20 +63,20 @@ const io = new Server(server, {
   cors: { origin: allowedOrigin },
 });
 
-// Socket authentication middleware — runs once, when a client first connects.
-// The client sends its JWT via socket.handshake.auth.token (set in the
-// frontend before calling socket.connect()). We verify it here, the same
-// way authMiddleware.js verifies REST requests, and attach the confirmed
-// user id to the socket itself. Every event handler below trusts
-// socket.userId — never a value sent in the event payload — so nobody can
-// impersonate another user by editing what their client sends.
-io.use((socket, next) => {
+// Socket authentication — verifies the JWT once at connection time, and
+// also fetches the user's name here so presence/typing events can display
+// it without a database round-trip on every single event.
+io.use(async (socket, next) => {
   const token = socket.handshake.auth?.token;
   if (!token) return next(new Error("Not authorized, no token"));
 
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const user = await User.findById(decoded.id).select("name");
+    if (!user) return next(new Error("Not authorized, user not found"));
+
     socket.userId = decoded.id;
+    socket.userName = user.name;
     next();
   } catch (err) {
     next(new Error("Not authorized, invalid token"));
@@ -74,15 +85,33 @@ io.use((socket, next) => {
 
 app.set("io", io);
 
+// In-memory presence map: roomCode -> Map(socketId -> { userId, name }).
+// Deliberately not persisted to MongoDB — presence is inherently transient
+// (only true while a socket connection is open), so a database round-trip
+// on every connect/disconnect would be unnecessary overhead for data that's
+// wrong the instant someone closes their laptop anyway.
+const roomPresence = {};
+
+const broadcastPresence = (roomCode) => {
+  const members = roomPresence[roomCode] ? Array.from(roomPresence[roomCode].values()) : [];
+  // Dedupe by userId — the same person open in two tabs shouldn't show twice
+  const unique = Array.from(new Map(members.map((m) => [m.userId, m])).values());
+  io.to(roomCode).emit("presenceUpdate", unique);
+};
+
 io.on("connection", (socket) => {
   console.log("Socket connected:", socket.id, "user:", socket.userId);
 
   socket.on("joinRoom", (roomCode) => {
     socket.join(roomCode);
+    if (!roomPresence[roomCode]) roomPresence[roomCode] = new Map();
+    roomPresence[roomCode].set(socket.id, { userId: socket.userId, name: socket.userName });
+    broadcastPresence(roomCode);
     console.log(`Socket ${socket.id} joined room ${roomCode}`);
   });
 
   socket.on("sendMessage", async ({ roomCode, text }) => {
+    if (!roomCode || !text) return;
     try {
       const message = await Message.create({ roomCode, sender: socket.userId, text });
       const populated = await message.populate("sender", "name");
@@ -92,14 +121,20 @@ io.on("connection", (socket) => {
     }
   });
 
+  // Typing indicator — deliberately NOT persisted anywhere, and uses
+  // socket.to() instead of io.to() so the sender doesn't receive their own
+  // "is typing" event back.
+  socket.on("typing", (roomCode) => {
+    if (!roomCode) return;
+    socket.to(roomCode).emit("userTyping", { userId: socket.userId, name: socket.userName });
+  });
+
   socket.on("addReaction", async ({ roomCode, productId, emoji }) => {
     if (!roomCode || !productId || !emoji) {
       console.error("addReaction: ignored malformed event", { roomCode, productId, emoji });
       return;
     }
     try {
-      // Dedup: a user reacting again on the same product replaces their
-      // previous reaction instead of stacking duplicates (#13)
       await Reaction.deleteMany({ roomCode, product: productId, user: socket.userId });
       const reaction = await Reaction.create({ roomCode, product: productId, user: socket.userId, emoji });
       const populated = await reaction.populate("user", "name");
@@ -109,8 +144,41 @@ io.on("connection", (socket) => {
     }
   });
 
+  // Casting a vote replaces any previous vote by this user on this product
+  // in this room (upsert on the compound unique index), then broadcasts the
+  // updated tally so every member's UI stays in sync without a page reload.
+  socket.on("castVote", async ({ roomCode, productId, vote }) => {
+    if (!roomCode || !productId || !["BUY", "SKIP", "MAYBE"].includes(vote)) {
+      console.error("castVote: ignored malformed event", { roomCode, productId, vote });
+      return;
+    }
+    try {
+      await Vote.findOneAndUpdate(
+        { roomCode, product: productId, user: socket.userId },
+        { vote },
+        { upsert: true, new: true, setDefaultsOnInsert: true }
+      );
+
+      const allVotes = await Vote.find({ roomCode, product: productId });
+      const tally = { BUY: 0, SKIP: 0, MAYBE: 0 };
+      allVotes.forEach((v) => tally[v.vote]++);
+
+      io.to(roomCode).emit("voteUpdated", { productId, tally, voterId: socket.userId, vote });
+    } catch (err) {
+      console.error("castVote error:", err);
+    }
+  });
+
   socket.on("disconnect", () => {
     console.log("Socket disconnected:", socket.id);
+    // socket.rooms was cleared by the time this fires in some socket.io
+    // versions, so we scan our own presence map instead of relying on it.
+    for (const roomCode of Object.keys(roomPresence)) {
+      if (roomPresence[roomCode].has(socket.id)) {
+        roomPresence[roomCode].delete(socket.id);
+        broadcastPresence(roomCode);
+      }
+    }
   });
 });
 

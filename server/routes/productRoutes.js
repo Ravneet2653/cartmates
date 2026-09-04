@@ -6,7 +6,7 @@ import {
   updateProduct,
   deleteProduct,
 } from "../controllers/productController.js";
-import protect from "../middleware/authMiddleware.js";
+import protect, { adminOnly } from "../middleware/authMiddleware.js";
 
 const router = express.Router();
 
@@ -14,10 +14,11 @@ const router = express.Router();
 router.get("/", getProducts);
 router.get("/:id", getProductById);
 
-// Writing requires login — previously anyone, logged in or not, could
-// create/edit/delete products
-router.post("/", protect, createProduct);
-router.put("/:id", protect, updateProduct);
-router.delete("/:id", protect, deleteProduct);
+// Writing now requires BOTH login AND the admin role — previously any
+// logged-in user (not just admins) could create, edit, or delete any
+// product in the catalog.
+router.post("/", protect, adminOnly, createProduct);
+router.put("/:id", protect, adminOnly, updateProduct);
+router.delete("/:id", protect, adminOnly, deleteProduct);
 
 export default router;

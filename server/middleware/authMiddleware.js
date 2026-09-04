@@ -1,4 +1,5 @@
 import jwt from "jsonwebtoken";
+import User from "../models/User.js";
 
 // This function runs BEFORE any route it's attached to.
 // It checks for a valid JWT and either lets the request through (next())
@@ -21,4 +22,17 @@ const protect = (req, res, next) => {
   }
 };
 
+// Runs AFTER protect. Looks up the user's CURRENT role from the database
+// rather than trusting anything baked into the JWT — deliberately, so
+// revoking someone's admin access takes effect immediately, without
+// waiting for their existing token to expire.
+const adminOnly = async (req, res, next) => {
+  const user = await User.findById(req.user.id).select("role");
+  if (!user || user.role !== "admin") {
+    return res.status(403).json({ message: "Admin access required" });
+  }
+  next();
+};
+
 export default protect;
+export { adminOnly };

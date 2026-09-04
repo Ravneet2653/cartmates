@@ -4,36 +4,67 @@ import api from "../api/axios.js";
 import { useAuth } from "../context/AuthContext.jsx";
 import ProductImage from "../components/ProductImage.jsx";
 
+const CATEGORIES = ["All", "Clothing", "Footwear", "Accessories"];
+
 export default function Products() {
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [addedId, setAddedId] = useState(null);
+  const [search, setSearch] = useState("");
+  const [category, setCategory] = useState("All");
   const { user } = useAuth();
   const navigate = useNavigate();
 
   useEffect(() => {
+    setLoading(true);
+    const params = new URLSearchParams();
+    if (search) params.set("search", search);
+    if (category !== "All") params.set("category", category);
+
     api
-      .get("/products")
+      .get(`/products?${params.toString()}`)
       .then((res) => setProducts(res.data.products))
       .catch(() => setError("Could not load products"))
       .finally(() => setLoading(false));
-  }, []);
+  }, [search, category]);
 
   const addToCart = async (e, productId) => {
-    e.stopPropagation(); // don't let the click bubble up and trigger the card's navigate
+    e.stopPropagation();
     await api.post("/cart/add", { productId, quantity: 1 });
     setAddedId(productId);
     setTimeout(() => setAddedId(null), 1500);
   };
 
-  if (loading) return <p>Loading products...</p>;
-  if (error) return <p className="error-text">{error}</p>;
-
   return (
     <div>
       <h2>Products</h2>
-      {products.length === 0 && <p className="empty-state">No products yet — add some via the API.</p>}
+
+      <div style={{ display: "flex", gap: 12, marginBottom: 20, flexWrap: "wrap" }}>
+        <input
+          className="field"
+          style={{ marginBottom: 0, maxWidth: 260 }}
+          placeholder="Search products..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+        />
+        <select
+          className="field"
+          style={{ marginBottom: 0, maxWidth: 180 }}
+          value={category}
+          onChange={(e) => setCategory(e.target.value)}
+        >
+          {CATEGORIES.map((c) => (
+            <option key={c} value={c}>{c}</option>
+          ))}
+        </select>
+      </div>
+
+      {loading && <p>Loading products...</p>}
+      {error && <p className="error-text">{error}</p>}
+      {!loading && !error && products.length === 0 && (
+        <p className="empty-state">No products match your search.</p>
+      )}
 
       <div className="product-grid">
         {products.map((product) => (

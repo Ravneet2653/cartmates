@@ -93,3 +93,21 @@ export const removeFromSharedCart = asyncHandler(async (req, res) => {
   await cart.save();
   res.json(cart);
 });
+
+export const leaveSharedCart = asyncHandler(async (req, res) => {
+  const cart = await SharedCart.findOne({ roomCode: req.params.roomCode });
+  if (!cart) return res.status(404).json({ message: "Room not found" });
+
+  const isMember = cart.members.some((id) => id.toString() === req.user.id);
+  if (!isMember) return res.status(403).json({ message: "Not a member of this cart" });
+
+  cart.members = cart.members.filter((id) => id.toString() !== req.user.id);
+  await cart.save();
+
+  // Let everyone still in the room know — reuses the same presence event
+  // structure the socket layer already broadcasts.
+  const io = req.app.get("io");
+  io.to(req.params.roomCode).emit("memberLeft", { userId: req.user.id });
+
+  res.json({ message: "Left the room" });
+});
