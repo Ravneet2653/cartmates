@@ -2,27 +2,77 @@ import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import User from "../models/User.js";
 import asyncHandler from "../middleware/asyncHandler.js";
+import { sendOTPEmail } from "../services/emailService.js";
+
+const generateOTP = () => Math.floor(100000 + Math.random() * 900000).toString();
+const OTP_EXPIRY_MS = 10 * 60 * 1000; // 10 minutes
 
 export const signup = asyncHandler(async (req, res) => {
-  // Deliberately destructure only name/email/password — even if req.body
-  // contains a "role" field, it's never read here. Role is never
-  // self-service; it's only ever set by an admin script (see
-  // scripts/makeAdmin.js). Letting a client set their own role at signup
-  // would be a privilege-escalation vulnerability.
-  const { name, email, password } = req.body;
+  const { name, email, password } = req.body; // role never read from req.body — see below
 
   const existing = await User.findOne({ email });
   if (existing) return res.status(400).json({ message: "Email already in use" });
 
   const hashedPassword = await bcrypt.hash(password, 10);
-  const user = await User.create({ name, email, password: hashedPassword });
+  const otp = generateOTP();
+
+  await User.create({
+    name,
+    email,
+    password: hashedPassword,
+    isVerified: false,
+    otp,
+    otpExpiry: new Date(Date.now() + OTP_EXPIRY_MS),
+  });
+
+  await sendOTPEmail(email, otp);
+
+  // No token issued yet — the account isn't usable until the code is verified.
+  res.status(201).json({ message: "Verification code sent", email });
+});
+
+export const verifyOtp = asyncHandler(async (req, res) => {
+  const { email, otp } = req.body;
+
+  const user = await User.findOne({ email });
+  if (!user) return res.status(404).json({ message: "No account found for this email" });
+  if (user.isVerified) return res.status(400).json({ message: "Account already verified" });
+
+  if (!user.otp || user.otp !== otp) {
+    return res.status(400).json({ message: "Incorrect code" });
+  }
+  if (user.otpExpiry < new Date()) {
+    return res.status(400).json({ message: "Code expired — request a new one" });
+  }
+
+  user.isVerified = true;
+  user.otp = null;
+  user.otpExpiry = null;
+  await user.save();
 
   const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, { expiresIn: "7d" });
 
-  res.status(201).json({
+  res.json({
     token,
     user: { id: user._id, name: user.name, email: user.email, role: user.role },
   });
+});
+
+export const resendOtp = asyncHandler(async (req, res) => {
+  const { email } = req.body;
+
+  const user = await User.findOne({ email });
+  if (!user) return res.status(404).json({ message: "No account found for this email" });
+  if (user.isVerified) return res.status(400).json({ message: "Account already verified" });
+
+  const otp = generateOTP();
+  user.otp = otp;
+  user.otpExpiry = new Date(Date.now() + OTP_EXPIRY_MS);
+  await user.save();
+
+  await sendOTPEmail(email, otp);
+
+  res.json({ message: "A new code has been sent" });
 });
 
 export const login = asyncHandler(async (req, res) => {
@@ -33,6 +83,10 @@ export const login = asyncHandler(async (req, res) => {
 
   const match = await bcrypt.compare(password, user.password);
   if (!match) return res.status(400).json({ message: "Invalid credentials" });
+
+  if (!user.isVerified) {
+    return res.status(403).json({ message: "Please verify your email first", email: user.email, needsVerification: true });
+  }
 
   const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, { expiresIn: "7d" });
 

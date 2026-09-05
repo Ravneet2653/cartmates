@@ -5,6 +5,7 @@ import ErrorBoundary from "./components/ErrorBoundary.jsx";
 import Navbar from "./components/Navbar.jsx";
 import Login from "./pages/Login.jsx";
 import Signup from "./pages/Signup.jsx";
+import VerifyOTP from "./pages/VerifyOTP.jsx";
 import Products from "./pages/Products.jsx";
 import ProductDetails from "./pages/ProductDetails.jsx";
 import Home from "./pages/Home.jsx";
@@ -22,6 +23,7 @@ export default function App() {
           <Routes>
             <Route path="/login" element={<Login />} />
             <Route path="/signup" element={<Signup />} />
+            <Route path="/verify-otp" element={<VerifyOTP />} />
             <Route path="/products" element={<Products />} />
             <Route path="/products/:id" element={<ProductDetails />} />
             <Route

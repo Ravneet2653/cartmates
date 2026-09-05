@@ -1,11 +1,21 @@
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { useNavigate, Link } from "react-router-dom";
 import api from "../api/axios.js";
 
 export default function SharedCartHome() {
   const [joinCode, setJoinCode] = useState("");
   const [error, setError] = useState("");
+  const [myRooms, setMyRooms] = useState([]);
+  const [loadingRooms, setLoadingRooms] = useState(true);
   const navigate = useNavigate();
+
+  useEffect(() => {
+    api
+      .get("/shared-cart/mine")
+      .then((res) => setMyRooms(res.data))
+      .catch(() => {}) // non-critical — page still works without this list
+      .finally(() => setLoadingRooms(false));
+  }, []);
 
   const handleCreate = async () => {
     setError("");
@@ -32,6 +42,30 @@ export default function SharedCartHome() {
     <div>
       <h2>Shared Cart</h2>
 
+      {!loadingRooms && myRooms.length > 0 && (
+        <>
+          <h3>Your rooms</h3>
+          <div className="summary-card" style={{ marginBottom: 20 }}>
+            {myRooms.map((room) => (
+              <Link
+                key={room._id}
+                to={`/shared-cart/${room.roomCode}`}
+                className="summary-row"
+                style={{ textDecoration: "none", color: "inherit" }}
+              >
+                <div>
+                  <span className="item-name">{room.roomCode}</span>
+                  <div style={{ fontSize: "0.8rem", color: "var(--text-muted)" }}>
+                    {room.items.length} item{room.items.length !== 1 ? "s" : ""} · {room.members.length} member{room.members.length !== 1 ? "s" : ""}
+                  </div>
+                </div>
+                <span className="btn btn-small">Rejoin →</span>
+              </Link>
+            ))}
+          </div>
+        </>
+      )}
+
       <div className="summary-card" style={{ padding: "20px", marginBottom: 20 }}>
         <h3 style={{ margin: "0 0 8px" }}>Start a new room</h3>
         <p style={{ color: "var(--text-muted)", marginTop: 0, fontSize: "0.88rem" }}>
@@ -43,7 +77,7 @@ export default function SharedCartHome() {
       </div>
 
       <div className="summary-card" style={{ padding: "20px" }}>
-        <h3 style={{ margin: "0 0 8px" }}>Join an existing room</h3>
+        <h3 style={{ margin: "0 0 8px" }}>Join a different room</h3>
         <form onSubmit={handleJoin} style={{ display: "flex", gap: 10 }}>
           <input
             className="field"

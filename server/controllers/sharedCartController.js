@@ -8,6 +8,14 @@ const generateRoomCode = () => {
   return code;
 };
 
+export const getMySharedCarts = asyncHandler(async (req, res) => {
+  // Sorted by most recently updated first — the rooms you were just in show up on top
+  const carts = await SharedCart.find({ members: req.user.id })
+    .select("roomCode items members status updatedAt")
+    .sort({ updatedAt: -1 });
+  res.json(carts);
+});
+
 export const createSharedCart = asyncHandler(async (req, res) => {
   // Extremely unlikely to collide (36^6 possibilities), but retrying costs
   // nothing and turns a rare hard failure into an invisible non-issue.

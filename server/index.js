@@ -22,7 +22,7 @@ import { notFound, errorHandler } from "./middleware/errorHandler.js";
 
 dotenv.config();
 
-const requiredEnvVars = ["MONGO_URI", "JWT_SECRET", "GEMINI_API_KEY", "PORT"];
+const requiredEnvVars = ["MONGO_URI", "JWT_SECRET", "GEMINI_API_KEY", "EMAILJS_SERVICE_ID", "EMAILJS_TEMPLATE_ID", "EMAILJS_PUBLIC_KEY", "EMAILJS_PRIVATE_KEY", "PORT"];
 const missing = requiredEnvVars.filter((key) => !process.env[key]);
 if (missing.length > 0) {
   console.error(`Missing required environment variables: ${missing.join(", ")}`);

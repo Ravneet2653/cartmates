@@ -1,23 +1,38 @@
 // Builds the prompt and calls Gemini. Returns { decision, reason }.
-export const getAIRecommendation = async (product, messages, reactions) => {
+export const getAIRecommendation = async (product, messages, reactions, memberCount) => {
   const chatSummary = messages.map((m) => `${m.sender.name}: ${m.text}`).join("\n");
   const reactionSummary = reactions.map((r) => `${r.user.name} reacted ${r.emoji}`).join(", ");
 
+  // Language adapts based on whether this is actually a group decision or
+  // just one person — the prompt used to say "helping a group" unconditionally,
+  // which read oddly when there was no group at all.
+  const groupContext =
+    memberCount > 1
+      ? `You are helping a group of ${memberCount} people decide whether to buy a product together.`
+      : "You are helping a single shopper decide whether to buy a product.";
+
   const prompt = `
-You are helping a group decide whether to buy a product together.
+${groupContext}
 
 Product: ${product.name}
 Price: ${product.price}
 Rating: ${product.rating || "N/A"}
 Description: ${product.description || "N/A"}
 
-Group chat about this product:
+Chat, in chronological order (oldest first):
 ${chatSummary || "No messages yet."}
 
 Reactions:
 ${reactionSummary || "No reactions yet."}
 
-Based on this, respond with ONLY valid JSON, no other text, in this exact shape:
+Important: chat and reactions can sometimes send contradictory signals —
+for example someone writing "let's buy this" but also reacting with 👎.
+When that happens, don't silently pick a side. Weigh the most recent
+signal more heavily, and if the conflict is genuinely unclear, prefer
+MAYBE and briefly name the conflict in your reason rather than guessing
+confidently.
+
+Based on all of this, respond with ONLY valid JSON, no other text, in this exact shape:
 {"decision": "BUY" | "SKIP" | "MAYBE", "reason": "one short sentence explaining why"}
 `;
 

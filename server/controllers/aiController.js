@@ -1,11 +1,9 @@
 import Product from "../models/Product.js";
 import Message from "../models/Message.js";
 import Reaction from "../models/Reaction.js";
+import SharedCart from "../models/SharedCart.js";
 import { getAIRecommendation } from "../services/aiService.js";
 
-// This one keeps its own try/catch (instead of relying only on asyncHandler)
-// because a failed AI call should still return a usable fallback shape,
-// not a generic 500 — the UI needs *something* to render either way.
 export const getSuggestion = async (req, res) => {
   const { roomCode, productId } = req.body;
 
@@ -13,10 +11,17 @@ export const getSuggestion = async (req, res) => {
     const product = await Product.findById(productId);
     if (!product) return res.status(404).json({ message: "Product not found" });
 
-    const messages = await Message.find({ roomCode }).populate("sender", "name");
+    const cart = await SharedCart.findOne({ roomCode });
+    const memberCount = cart ? cart.members.length : 1;
+
+    // Sorted chronologically — the prompt now explicitly reasons about
+    // "most recent" signals, so send order actually matters here.
+    const messages = await Message.find({ roomCode })
+      .populate("sender", "name")
+      .sort({ createdAt: 1 });
     const reactions = await Reaction.find({ roomCode, product: productId }).populate("user", "name");
 
-    const result = await getAIRecommendation(product, messages, reactions);
+    const result = await getAIRecommendation(product, messages, reactions, memberCount);
     res.json(result);
   } catch (err) {
     console.error("AI suggestion error:", err);

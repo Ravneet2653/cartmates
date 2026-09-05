@@ -18,6 +18,13 @@ export default function Login() {
       await login(email, password);
       navigate("/products");
     } catch (err) {
+      // Login itself returns 403 + needsVerification for an unverified
+      // account — send them straight to the verify page instead of leaving
+      // them stuck on an error with no way forward.
+      if (err.response?.data?.needsVerification) {
+        navigate("/verify-otp", { state: { email: err.response.data.email } });
+        return;
+      }
       setError(err.response?.data?.message || "Something went wrong");
     } finally {
       setLoading(false);

@@ -2,6 +2,41 @@ import { useState, useEffect } from "react";
 import api from "../api/axios.js";
 import ProductImage from "../components/ProductImage.jsx";
 
+// Local text state, separate from the actual quantity — lets you clear the
+// field and type freely (e.g. "12" -> "" -> "5") without the API being
+// called on every keystroke, and without min="1" fighting you mid-type.
+// Only commits (and calls the API) on blur or Enter.
+function QuantityInput({ value, onCommit }) {
+  const [text, setText] = useState(String(value));
+
+  useEffect(() => {
+    setText(String(value));
+  }, [value]);
+
+  const commit = () => {
+    const num = parseInt(text, 10);
+    if (!Number.isNaN(num) && num >= 1) {
+      if (num !== value) onCommit(num);
+    } else {
+      setText(String(value)); // invalid/empty — revert instead of sending a bad value
+    }
+  };
+
+  return (
+    <input
+      className="quantity-input"
+      type="number"
+      min="1"
+      value={text}
+      onChange={(e) => setText(e.target.value)}
+      onBlur={commit}
+      onKeyDown={(e) => {
+        if (e.key === "Enter") e.target.blur(); // Enter commits, same as clicking away
+      }}
+    />
+  );
+}
+
 export default function Cart() {
   const [cart, setCart] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -65,12 +100,9 @@ export default function Cart() {
               </div>
               <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
                 <span className="item-price">₹{item.product.price}</span>
-                <input
-                  className="quantity-input"
-                  type="number"
-                  min="1"
+                <QuantityInput
                   value={item.quantity}
-                  onChange={(e) => updateQuantity(item.product._id, Number(e.target.value))}
+                  onCommit={(quantity) => updateQuantity(item.product._id, quantity)}
                 />
                 <button className="btn btn-small btn-ghost" onClick={() => removeItem(item.product._id)}>
                   Remove

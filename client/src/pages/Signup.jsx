@@ -17,7 +17,8 @@ export default function Signup() {
     setLoading(true);
     try {
       await signup(name, email, password);
-      navigate("/products");
+      // Not logged in yet — go verify the code that was just emailed
+      navigate("/verify-otp", { state: { email } });
     } catch (err) {
       setError(err.response?.data?.message || "Something went wrong");
     } finally {
@@ -29,7 +30,7 @@ export default function Signup() {
     <div style={{ display: "flex", justifyContent: "center", marginTop: "40px" }}>
       <form className="form-card" onSubmit={handleSubmit}>
         <h2>Create your account</h2>
-        <p style={{ color: "var(--ink-soft)", marginTop: 0, marginBottom: 20 }}>
+        <p style={{ color: "var(--text-muted)", marginTop: 0, marginBottom: 20 }}>
           Start a cart, invite your people.
         </p>
         <input

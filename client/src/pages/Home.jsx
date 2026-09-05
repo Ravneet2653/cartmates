@@ -42,7 +42,7 @@ export default function Home() {
           style={{
             fontFamily: "var(--font-display)",
             fontWeight: 800,
-            fontSize: "2.6rem",
+            fontSize: "clamp(1.9rem, 6vw, 2.6rem)",
             lineHeight: 1.2,
             margin: "0 0 16px",
             color: "var(--text)",
