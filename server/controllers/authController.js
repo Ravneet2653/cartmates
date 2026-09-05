@@ -101,3 +101,43 @@ export const getMe = asyncHandler(async (req, res) => {
   if (!user) return res.status(404).json({ message: "User not found" });
   res.json({ id: user._id, name: user.name, email: user.email, role: user.role });
 });
+
+export const forgotPassword = asyncHandler(async (req, res) => {
+  const { email } = req.body;
+
+  const user = await User.findOne({ email });
+  // Same "vague on purpose" principle as login — always respond the same
+  // way whether the email exists or not, so this endpoint can't be used
+  // to check which emails are registered.
+  if (!user) return res.json({ message: "If that email exists, a reset code has been sent" });
+
+  const otp = generateOTP();
+  user.otp = otp;
+  user.otpExpiry = new Date(Date.now() + OTP_EXPIRY_MS);
+  await user.save();
+
+  await sendOTPEmail(email, otp);
+
+  res.json({ message: "If that email exists, a reset code has been sent" });
+});
+
+export const resetPassword = asyncHandler(async (req, res) => {
+  const { email, otp, newPassword } = req.body;
+
+  const user = await User.findOne({ email });
+  if (!user) return res.status(400).json({ message: "Invalid or expired code" });
+
+  if (!user.otp || user.otp !== otp) {
+    return res.status(400).json({ message: "Incorrect code" });
+  }
+  if (user.otpExpiry < new Date()) {
+    return res.status(400).json({ message: "Code expired — request a new one" });
+  }
+
+  user.password = await bcrypt.hash(newPassword, 10);
+  user.otp = null;
+  user.otpExpiry = null;
+  await user.save();
+
+  res.json({ message: "Password reset — you can log in now" });
+});

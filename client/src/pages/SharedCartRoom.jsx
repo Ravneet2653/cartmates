@@ -27,6 +27,7 @@ export default function SharedCartRoom() {
   const [actionError, setActionError] = useState("");
   const [onlineMembers, setOnlineMembers] = useState([]);
   const [typingUser, setTypingUser] = useState(null);
+  const [linkCopied, setLinkCopied] = useState(false);
 
   const chatEndRef = useRef(null);
   const typingTimeoutRef = useRef(null);
@@ -128,6 +129,13 @@ export default function SharedCartRoom() {
     }
   };
 
+  const copyInviteLink = () => {
+    const link = `${window.location.origin}/join?roomCode=${cart.roomCode}`;
+    navigator.clipboard.writeText(link);
+    setLinkCopied(true);
+    setTimeout(() => setLinkCopied(false), 2000);
+  };
+
   const handleLeaveRoom = async () => {
     try {
       await api.post(`/shared-cart/${roomCode}/leave`);
@@ -167,7 +175,10 @@ export default function SharedCartRoom() {
             </span>
           ))}
         </div>
-        <button className="btn btn-small btn-ghost" onClick={handleLeaveRoom} style={{ marginLeft: "auto" }}>
+        <button className="btn btn-small" onClick={copyInviteLink} style={{ marginLeft: "auto" }}>
+          {linkCopied ? "Copied ✓" : "Copy Invite Link"}
+        </button>
+        <button className="btn btn-small btn-ghost" onClick={handleLeaveRoom}>
           Leave Room
         </button>
       </div>

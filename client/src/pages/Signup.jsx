@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useNavigate, Link } from "react-router-dom";
+import { useNavigate, useLocation, Link } from "react-router-dom";
 import { useAuth } from "../context/AuthContext.jsx";
 
 export default function Signup() {
@@ -10,6 +10,7 @@ export default function Signup() {
   const [loading, setLoading] = useState(false);
   const { signup } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -17,8 +18,10 @@ export default function Signup() {
     setLoading(true);
     try {
       await signup(name, email, password);
-      // Not logged in yet — go verify the code that was just emailed
-      navigate("/verify-otp", { state: { email } });
+      // Not logged in yet — go verify the code that was just emailed.
+      // Carry "from" along so a brand-new user invited via a room link
+      // still lands in that room right after verifying.
+      navigate("/verify-otp", { state: { email, from: location.state?.from } });
     } catch (err) {
       setError(err.response?.data?.message || "Something went wrong");
     } finally {

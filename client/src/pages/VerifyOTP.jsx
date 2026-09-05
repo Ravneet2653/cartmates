@@ -34,7 +34,8 @@ export default function VerifyOTP() {
     setLoading(true);
     try {
       await verifyOtp(email, otp);
-      navigate("/products");
+      const from = location.state?.from;
+      navigate(from ? `${from.pathname}${from.search}` : "/products");
     } catch (err) {
       setError(err.response?.data?.message || "Verification failed");
     } finally {
